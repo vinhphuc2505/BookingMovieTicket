@@ -3,16 +3,17 @@ package core.services;
 import core.dto.request.movie.MovieCreateRequest;
 import core.dto.request.movie.MovieUpdateRequest;
 import core.dto.response.MovieResponse;
+import core.dto.response.PageResponse;
 
-import java.util.List;
+
 import java.util.UUID;
 
 public interface MovieService {
     MovieResponse create(MovieCreateRequest request);
 
-    List<MovieResponse> searchMovies(String title);
+    PageResponse<MovieResponse> searchMovies(int page, int size, String title);
 
-    List<MovieResponse> getMovies();
+    PageResponse<MovieResponse> getMovies(int page, int size);
 
     MovieResponse update(UUID id, MovieUpdateRequest request);
 

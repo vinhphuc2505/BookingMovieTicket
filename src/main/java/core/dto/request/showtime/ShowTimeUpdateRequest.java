@@ -1,5 +1,6 @@
 package core.dto.request.showtime;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,11 +17,15 @@ import java.util.UUID;
 @Builder
 public class ShowTimeUpdateRequest {
 
+    @NotNull(message = "FIELD_IS_NOT_EMPTY")
     private UUID roomId;
 
+    @NotNull(message = "FIELD_IS_NOT_EMPTY")
     private UUID movieId;
 
+    @NotNull(message = "FIELD_IS_NOT_EMPTY")
     private ZonedDateTime startTime;
 
+    @NotNull(message = "FIELD_IS_NOT_EMPTY")
     private BigDecimal basePrice;
 }

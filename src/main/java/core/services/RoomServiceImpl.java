@@ -3,6 +3,7 @@ package core.services;
 
 import core.dto.request.room.RoomCreateRequest;
 import core.dto.request.room.RoomUpdateRequest;
+import core.dto.response.PageResponse;
 import core.dto.response.RoomResponse;
 import core.entities.Room;
 import core.exceptions.AppException;
@@ -10,6 +11,10 @@ import core.exceptions.ErrorCode;
 import core.mapper.RoomMapper;
 import core.repositories.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +41,23 @@ public class RoomServiceImpl implements RoomService{
     }
 
     @Override
-    public List<RoomResponse> getRoom() {
-        return roomMapper.toRoomResponse(roomRepository.findAll());
+    public PageResponse<RoomResponse> getRoom(int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("roomName").descending());
+
+        Page<Room> roomPage = roomRepository.findAll(pageable);
+
+        List<RoomResponse> roomResponses = roomPage.getContent().stream()
+                .map(roomMapper::toRoomResponse)
+                .toList();
+
+
+        return PageResponse.<RoomResponse>builder()
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(roomPage.getTotalPages())
+                .totalElements(roomPage.getTotalElements())
+                .data(roomResponses)
+                .build();
     }
 
     @Override

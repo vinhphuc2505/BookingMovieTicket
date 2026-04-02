@@ -4,6 +4,7 @@ package core.controllers;
 import core.dto.request.showtime.ShowTimeCreateRequest;
 import core.dto.request.showtime.ShowTimeUpdateRequest;
 import core.dto.response.ApiResponse;
+import core.dto.response.PageResponse;
 import core.dto.response.ShowTimeResponse;
 import core.services.ShowTimeService;
 import jakarta.validation.Valid;
@@ -11,11 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/showtime")
+@RequestMapping("/showtimes")
 @RequiredArgsConstructor
 public class ShowTimeController {
 
@@ -30,11 +30,13 @@ public class ShowTimeController {
     }
 
     @GetMapping
-    public ApiResponse<List<ShowTimeResponse>> findShowTimeByDate(
-            @RequestParam(value = "date", required = false)LocalDate date){
-        return ApiResponse.<List<ShowTimeResponse>>builder()
+    public ApiResponse<PageResponse<ShowTimeResponse>> findShowTimeByDate(
+            @RequestParam(value = "date", required = false)LocalDate date,
+            @RequestParam(value = "page", defaultValue = "1")int page,
+            @RequestParam(value = "size", defaultValue = "10")int size){
+        return ApiResponse.<PageResponse<ShowTimeResponse>>builder()
                 .code(200)
-                .result(showTimeService.findShowTimeByDate(date))
+                .result(showTimeService.findShowTimeByDate(date, page, size))
                 .build();
     }
 

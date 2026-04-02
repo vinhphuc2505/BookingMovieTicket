@@ -5,12 +5,13 @@ import core.dto.request.movie.MovieCreateRequest;
 import core.dto.request.movie.MovieUpdateRequest;
 import core.dto.response.ApiResponse;
 import core.dto.response.MovieResponse;
+import core.dto.response.PageResponse;
 import core.services.MovieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 import java.util.UUID;
 
 @RestController
@@ -29,18 +30,21 @@ public class MovieController {
     }
 
     @GetMapping
-    public ApiResponse<List<MovieResponse>> getMovies(){
-        return ApiResponse.<List<MovieResponse>>builder()
+    public ApiResponse<PageResponse<MovieResponse>> getMovies(@RequestParam(name = "page", defaultValue = "1") int page,
+                                                              @RequestParam(name = "size", defaultValue = "10") int size){
+        return ApiResponse.<PageResponse<MovieResponse>>builder()
                 .code(200)
-                .result(movieService.getMovies())
+                .result(movieService.getMovies(page, size))
                 .build();
     }
 
     @GetMapping("/search")
-    public ApiResponse<List<MovieResponse>> searchMovies(@RequestParam(value = "title", required = false) String title){
-        return ApiResponse.<List<MovieResponse>>builder()
+    public ApiResponse<PageResponse<MovieResponse>> searchMovies(@RequestParam(value = "title", required = false) String title,
+                                                         @RequestParam(name = "page", defaultValue = "1") int page,
+                                                         @RequestParam(name = "size", defaultValue = "10") int size){
+        return ApiResponse.<PageResponse<MovieResponse>>builder()
                 .code(200)
-                .result(movieService.searchMovies(title))
+                .result(movieService.searchMovies(page, size, title))
                 .build();
     }
 

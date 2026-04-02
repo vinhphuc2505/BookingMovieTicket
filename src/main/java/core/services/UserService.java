@@ -3,16 +3,15 @@ package core.services;
 
 import core.dto.request.user.UserCreateRequest;
 import core.dto.request.user.UserUpdateRequest;
+import core.dto.response.PageResponse;
 import core.dto.response.UserResponse;
 
-
-import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
     UserResponse create(UserCreateRequest request);
 
-    List<UserResponse> getUsers();
+    PageResponse<UserResponse> getUsers(int page, int size);
 
     UserResponse update(UUID id, UserUpdateRequest request);
 

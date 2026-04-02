@@ -39,8 +39,8 @@ public class User implements UserDetails {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", columnDefinition = "user_role")
-    private UserRole role = UserRole.USER;
+    @Column(name = "role")
+    private UserRole role;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -2,15 +2,17 @@ package core;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.util.TimeZone;
 
 @SpringBootApplication
+@EnableScheduling
+@EnableAsync
 public class BookingMovieTicketApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(BookingMovieTicketApplication.class, args);
-        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
     }
 
 }

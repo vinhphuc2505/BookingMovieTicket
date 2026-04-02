@@ -28,26 +28,29 @@ public class Ticket {
     private UUID ticketId;
 
     @OneToOne
-    @JoinColumn(name = "showTimeSeatId", unique = true)
+    @JoinColumn(name = "showTimeSeat_id", unique = true)
     private ShowTimeSeat showTimeSeat;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "ticketType",columnDefinition = "ticket_type")
+    @Column(name = "ticket_type")
     private TicketType ticketType = TicketType.ADULT;
 
     @Column(name = "price")
     private BigDecimal price;
 
     @CreationTimestamp
-    private ZonedDateTime bookingTime;
+    @Column(name = "booking_time")
+    private ZonedDateTime bookingTime = ZonedDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", columnDefinition = "payment_status")
+    @Column(name = "payment_status")
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Column(name = "is_reminded")
+    private boolean isReminded = false;
 
 }

@@ -3,6 +3,7 @@ package core.services;
 
 import core.dto.request.showtime.ShowTimeCreateRequest;
 import core.dto.request.showtime.ShowTimeUpdateRequest;
+import core.dto.response.PageResponse;
 import core.dto.response.ShowTimeResponse;
 import core.entities.Movie;
 import core.entities.Room;
@@ -14,6 +15,10 @@ import core.repositories.MovieRepository;
 import core.repositories.RoomRepository;
 import core.repositories.ShowTimeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,12 +70,26 @@ public class ShowTimeServiceImpl implements ShowTimeService{
     }
 
     @Override
-    public List<ShowTimeResponse> findShowTimeByDate(LocalDate date) {
+    public PageResponse<ShowTimeResponse> findShowTimeByDate(LocalDate date, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("startTime").descending());
+
         ZonedDateTime start = date.atStartOfDay(ZoneId.systemDefault());
 
         ZonedDateTime end = start.plusDays(1).minusNanos(1);
 
-        return showTimeMapper.toShowTimeResponse(showTimeRepository.findByStartTimeBetween(start, end));
+        Page<ShowTime> showTimePage = showTimeRepository.findByStartTimeBetween(start, end, pageable);
+
+        List<ShowTimeResponse> showTimeResponses = showTimePage.getContent().stream()
+                .map(showTimeMapper::toShowTimeResponse)
+                .toList();
+
+        return PageResponse.<ShowTimeResponse>builder()
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(showTimePage.getTotalPages())
+                .totalElements(showTimePage.getTotalElements())
+                .data(showTimeResponses)
+                .build();
     }
 
     @Override

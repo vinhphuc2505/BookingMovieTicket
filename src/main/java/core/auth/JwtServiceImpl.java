@@ -89,7 +89,7 @@ public class JwtServiceImpl implements JwtService {
         Date expiredTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         if (expiredTime.before(new Date())){
-            throw new RuntimeException("Token đã hết hạn");
+            throw new RuntimeException("Token expired");
         }
 
         var jwtId = signedJWT.getJWTClaimsSet().getJWTID();

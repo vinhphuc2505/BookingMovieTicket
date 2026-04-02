@@ -4,6 +4,7 @@ package core.controllers;
 import core.dto.request.room.RoomCreateRequest;
 import core.dto.request.room.RoomUpdateRequest;
 import core.dto.response.ApiResponse;
+import core.dto.response.PageResponse;
 import core.dto.response.RoomResponse;
 import core.services.RoomService;
 import jakarta.validation.Valid;
@@ -28,10 +29,11 @@ public class RoomController {
     }
 
     @GetMapping
-    public ApiResponse<List<RoomResponse>> getRoom(){
-        return ApiResponse.<List<RoomResponse>>builder()
+    public ApiResponse<PageResponse<RoomResponse>> getRoom(@RequestParam(value = "page", defaultValue = "1")int page,
+                                                           @RequestParam(value = "size", defaultValue = "10")int size){
+        return ApiResponse.<PageResponse<RoomResponse>>builder()
                 .code(200)
-                .result(roomService.getRoom())
+                .result(roomService.getRoom(page, size))
                 .build();
     }
 

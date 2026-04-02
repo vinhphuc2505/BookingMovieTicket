@@ -1,6 +1,9 @@
 package core.repositories;
 
+import core.entities.Room;
 import core.entities.Seat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,8 +14,10 @@ import java.util.UUID;
 
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, UUID> {
-    boolean existsBySeatNumber(String seatNumber);
+    boolean existsBySeatNumberAndRoom(String seatNumber, Room room);
+
+    boolean existsByRoomAndSeatNumberIn(Room room, List<String> seatNumbers);
 
     @Query("SELECT s FROM Seat s WHERE s.room.roomId = :roomId")
-    List<Seat> findAllByRoomId(@Param("roomId")UUID roomId);
+    Page<Seat> findAllByRoomId(@Param("roomId")UUID roomId, Pageable pageable);
 }

@@ -53,7 +53,7 @@ public class AuthenticateServiceImpl implements AuthenticateService{
         Date expiredTime = jwtInfo.getExpiredTime();
 
         if (expiredTime.before(new Date())){
-            throw new RuntimeException("Token đã hết hạn");
+            throw new RuntimeException("Token expired");
         }
 
         RedisToken redisToken = RedisToken.builder()

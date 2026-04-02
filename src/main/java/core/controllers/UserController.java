@@ -4,6 +4,7 @@ package core.controllers;
 import core.dto.request.user.UserCreateRequest;
 import core.dto.request.user.UserUpdateRequest;
 import core.dto.response.ApiResponse;
+import core.dto.response.PageResponse;
 import core.dto.response.UserResponse;
 import core.services.UserService;
 import jakarta.validation.Valid;
@@ -28,10 +29,11 @@ public class UserController {
     }
 
     @GetMapping
-    public ApiResponse<List<UserResponse>> getUsers(){
-        return ApiResponse.<List<UserResponse>>builder()
+    public ApiResponse<PageResponse<UserResponse>> getUsers(@RequestParam(value = "page", defaultValue = "1") int page,
+                                                            @RequestParam(value = "size", defaultValue = "10") int size){
+        return ApiResponse.<PageResponse<UserResponse>>builder()
                 .code(200)
-                .result(userService.getUsers())
+                .result(userService.getUsers(page, size))
                 .build();
     }
 

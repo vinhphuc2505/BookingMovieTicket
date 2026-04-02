@@ -2,6 +2,7 @@ package core.services;
 
 
 import core.dto.request.seat.SeatCreateRequest;
+import core.dto.response.PageResponse;
 import core.dto.response.SeatResponse;
 import core.entities.Room;
 import core.entities.Seat;
@@ -11,12 +12,17 @@ import core.mapper.SeatMapper;
 import core.repositories.RoomRepository;
 import core.repositories.SeatRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,22 +37,50 @@ public class SeatServiceImpl implements SeatService{
     @Override
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public SeatResponse create(SeatCreateRequest request) {
-        Seat seat = seatMapper.toSeat(request);
+    public List<SeatResponse> create(SeatCreateRequest request) {
 
-        if(seatRepository.existsBySeatNumber(request.getSeatNumber())){
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_EXISTED));
+
+        List<String> seatNumbers = request.getSeatNumbers();
+
+        boolean exists = seatRepository.existsByRoomAndSeatNumberIn(room, seatNumbers);
+
+        if(exists){
             throw new AppException(ErrorCode.SEAT_EXISTED);
         }
 
-        Room room = roomRepository.findById(request.getRoomId()).orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_EXISTED));
-        seat.setRoom(room);
+        List<Seat> seats = request.getSeatNumbers().stream()
+                .map(seatNumber -> {
+                    Seat seat = new Seat();
+                    seat.setRoom(room);
+                    seat.setSeatNumber(seatNumber);
+                    return seat;
+                })
+                .collect(Collectors.toList());
 
-        return seatMapper.toSeatResponse(seatRepository.save(seat));
+        seatRepository.saveAll(seats);
+
+        return seatMapper.toSeatResponse(seats);
     }
 
     @Override
-    public List<SeatResponse> getSeatByRoom(UUID roomId) {
-        return seatMapper.toSeatResponse(seatRepository.findAllByRoomId(roomId));
+    public PageResponse<SeatResponse> getSeatByRoom(UUID roomId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("seatNumber").descending());
+
+        Page<Seat> seatPage = seatRepository.findAllByRoomId(roomId, pageable);
+
+        List<SeatResponse> seatResponses = seatPage.getContent().stream()
+                .map(seatMapper::toSeatResponse)
+                .toList();
+
+        return PageResponse.<SeatResponse>builder()
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(seatPage.getTotalPages())
+                .totalElements(seatPage.getTotalElements())
+                .data(seatResponses)
+                .build();
     }
 
     @Override

@@ -1,7 +1,9 @@
 package core.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import core.enums.SeatStatus;
+import core.enums.StatusReason;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,21 +26,29 @@ public class ShowTimeSeat {
 
     @ManyToOne
     @JoinColumn(name = "showTimeId")
+    @JsonBackReference
     private ShowTime showTime;
 
     @ManyToOne
     @JoinColumn(name = "seatId")
+    @JsonBackReference
     private Seat seat;
 
-    @OneToOne
-    @JoinColumn(name = "ticketId")
-    private Ticket ticket;
-
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "seat_status")
-    private SeatStatus status;
+    @Column(name = "seat_status")
+    private SeatStatus status = SeatStatus.AVAILABLE;
 
     @Column(name = "hold_expires_at")
-    private ZonedDateTime holdExpiresAt;
+    private ZonedDateTime holdExpiresAt = null;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "description")
+    private StatusReason description = StatusReason.NONE;
+
+    @Column(name = "is_modified")
+    private boolean isModified = false;
+
+    @Column(name = "user_holding")
+    private UUID userHolding;
 
 }
