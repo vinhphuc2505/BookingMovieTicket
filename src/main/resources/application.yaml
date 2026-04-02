@@ -3,9 +3,9 @@ spring:
     name: BookingMovieTicket
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/booking
-    username: postgres
-    password: 123456
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_POST:5432}/${DATABASE_NAME:booking}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:123456}
 
   jpa:
     hibernate:
