@@ -3,36 +3,32 @@ spring:
     name: BookingMovieTicket
 
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_POST:5432}/${DATABASE_NAME:booking}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_POST:5432}/${DATABASE_NAME_TEST:booking_test}
     username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:123456}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         jdbc:
           time_zone: UTC
-logging:
-  level:
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.SQL: DEBUG
+        javax:
+          persistence:
+            lock:
+              timeout: 3000
+#logging:
+#  level:
+#    org.hibernate.orm.jdbc.bind: TRACE
+#    org.hibernate.SQL: DEBUG
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-#      password: ${REDIS_PASSWORD:123456}
-
-#  springdoc:
-#    swagger-ui:
-#      path: /swagger-ui.html
-#    api-docs:
-#      path: /v3/api-docs
-
 
 app:
   cron:

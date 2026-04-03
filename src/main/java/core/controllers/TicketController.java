@@ -31,12 +31,11 @@ public class TicketController {
 
     @GetMapping
     public ApiResponse<PageResponse<TicketResponse>> findAllTicketByUser(
-            @RequestParam(value = "id") UUID id,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size){
         return ApiResponse.<PageResponse<TicketResponse>>builder()
                 .code(200)
-                .result(ticketService.findAllTicketByUser(id, page, size))
+                .result(ticketService.findAllTicketByUser(page, size))
                 .build();
     }
 

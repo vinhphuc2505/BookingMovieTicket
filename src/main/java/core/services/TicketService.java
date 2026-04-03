@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface TicketService {
     List<TicketResponse> create(TicketCreateRequest request);
 
-    PageResponse<TicketResponse> findAllTicketByUser(UUID userId, int page, int size);
+    PageResponse<TicketResponse> findAllTicketByUser(int page, int size);
 
     TicketResponse update(UUID id,TicketUpdateRequest request);
 

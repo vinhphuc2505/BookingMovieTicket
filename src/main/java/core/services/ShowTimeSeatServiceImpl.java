@@ -17,6 +17,7 @@ import core.mapper.ShowTimeSeatMapper;
 import core.repositories.SeatRepository;
 import core.repositories.ShowTimeRepository;
 import core.repositories.ShowTimeSeatRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -53,6 +55,8 @@ public class ShowTimeSeatServiceImpl implements ShowTimeSeatService{
 
     private final StringRedisTemplate stringRedisTemplate;
 
+    private final EntityManager entityManager;
+
     @Lazy
     @Autowired
     private ShowTimeSeatServiceImpl self;
@@ -60,6 +64,7 @@ public class ShowTimeSeatServiceImpl implements ShowTimeSeatService{
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ShowTimeSeatResponse> create(ShowTimeSeatCreateRequest request) {
 
         ShowTime showTime = showTimeRepository.findById(request.getShowTimeId())
@@ -205,6 +210,7 @@ public class ShowTimeSeatServiceImpl implements ShowTimeSeatService{
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(UUID id) {
         showTimeSeatRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SHOW_TIME_SEAT_NOT_EXISTED));
         showTimeRepository.deleteById(id);
@@ -236,6 +242,8 @@ public class ShowTimeSeatServiceImpl implements ShowTimeSeatService{
     public ShowTimeSeat holdingSingleSeat(UUID userId, UUID showTimeSeatId, ZonedDateTime expireAt){
         ShowTimeSeat showTimeSeat = showTimeSeatRepository.findAndUpdate(showTimeSeatId);
 
+        entityManager.refresh(showTimeSeat);
+
         if(showTimeSeat == null){
             throw new AppException(ErrorCode.SHOW_TIME_SEAT_NOT_EXISTED);
         }
@@ -249,10 +257,14 @@ public class ShowTimeSeatServiceImpl implements ShowTimeSeatService{
         showTimeSeat.setDescription(StatusReason.CUSTOMER_HOLDING);
         showTimeSeat.setUserHolding(userId);
 
-        showTimeSeatRepository.save(showTimeSeat);
+        try{
+            showTimeSeatRepository.save(showTimeSeat);
+        }catch (Exception e){
+            log.error("Save unsuccessfully");
+            throw e;
+        }
 
         return showTimeSeat;
-
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

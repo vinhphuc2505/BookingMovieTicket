@@ -41,6 +41,7 @@ public class RoomServiceImpl implements RoomService{
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public PageResponse<RoomResponse> getRoom(int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("roomName").descending());
 

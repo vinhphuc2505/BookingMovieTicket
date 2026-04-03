@@ -6,6 +6,7 @@ import core.dto.request.ticket.TicketItemRequest;
 import core.dto.request.ticket.TicketUpdateRequest;
 import core.dto.response.PageResponse;
 import core.dto.response.TicketResponse;
+import core.entities.Seat;
 import core.entities.ShowTimeSeat;
 import core.entities.Ticket;
 import core.entities.User;
@@ -30,8 +31,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -111,10 +114,12 @@ public class TicketServiceImpl implements TicketService{
 
 
     @Override
-    public PageResponse<TicketResponse> findAllTicketByUser(UUID userId, int page, int size) {
+    public PageResponse<TicketResponse> findAllTicketByUser(int page, int size) {
+        var userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("bookingTime").descending());
 
-        Page<Ticket> ticketPage = ticketRepository.findAllTicketByUser(userId, pageable);
+        Page<Ticket> ticketPage = ticketRepository.findAllTicketByUser(UUID.fromString(userId), pageable);
 
         List<TicketResponse> ticketResponses = ticketPage.getContent().stream()
                 .map(ticketMapper::toTicketResponse)
@@ -156,32 +161,61 @@ public class TicketServiceImpl implements TicketService{
         ZonedDateTime start = nowUTC.plusMinutes(30);
         ZonedDateTime end = nowUTC.plusMinutes(60);
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh"));
+
 
         List<Ticket> tickets = ticketRepository.findTicketsToRemind(start, end);
 
-//        log.info("Danh sách vé:");
-//        for (Ticket t : tickets){
-//            log.info("Đã tìm thấy vé cần nhắc hẹn: ID = {}, Phim = {}, Email = {}",
-//                    t.getTicketId(),
-//                    t.getShowTimeSeat().getShowTime().getMovie().getTitle(),
-//                    t.getUser().getEmail());
-//        }
+        List<Ticket> ticketListUpdate = new ArrayList<>();
 
-
-        for (Ticket ticket : tickets) {
-            // 1. Chuẩn bị params
-            Map<String, Object> params = new HashMap<>();
-            params.put("movie_name", ticket.getShowTimeSeat().getShowTime().getMovie().getTitle());
-            params.put("seat_number", ticket.getShowTimeSeat().getSeat().getSeatNumber());
-
-            // 2. Gọi async service (Nó sẽ chạy ở thread khác)
-            emailReminderService.sendBookingReminder(ticket.getUser().getEmail(), ticket.getUser().getUsername(), params);
-
-            // 3. Đánh dấu đã xử lý ngay lập tức trong Transaction hiện tại
-            ticket.setReminded(true);
-            ticketRepository.save(ticket);
+        log.info("Danh sách vé:");
+        for (Ticket t : tickets){
+            log.info("Đã tìm thấy vé cần nhắc hẹn: ID = {}, Phim = {}, Email = {}",
+                    t.getTicketId(),
+                    t.getShowTimeSeat().getShowTime().getMovie().getTitle(),
+                    t.getUser().getEmail());
         }
 
+        if(!tickets.isEmpty()){
+            Map<UUID, List<Ticket>> userTicketsMap = tickets.stream()
+                    .collect(Collectors.groupingBy(t -> t.getUser().getUserId()));
+
+            userTicketsMap.forEach((userId, userTickets) -> {
+                User user = userTickets.get(0).getUser();
+                Ticket ticket = userTickets.get(0);
+                String movie = ticket.getShowTimeSeat().getShowTime().getMovie().getTitle();
+                String roomName = ticket.getShowTimeSeat().getShowTime().getRoom().getRoomName();
+                String startTime = formatter.format(ticket.getShowTimeSeat().getShowTime().getStartTime());
+                int totalSeat = userTickets.size();
+//                List<String> seatNumbers = userTickets.stream()
+//                        .map(t -> t.getShowTimeSeat().getSeat().getSeatNumber())
+//                        .toList();
+                String seatNumbers = userTickets.stream()
+                        .map(t -> t.getShowTimeSeat().getSeat().getSeatNumber())
+                        .collect(Collectors.joining(", "));
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("customer_name", user.getUsername());
+                params.put("movie_name", movie);
+                params.put("room_name", roomName);
+                params.put("start_time", startTime);
+                params.put("total_seat", totalSeat);
+                params.put("seat_numbers", seatNumbers);
+
+                // Gọi async service (Nó sẽ chạy ở thread khác)
+                emailReminderService.sendBookingReminder(ticket.getUser().getEmail(), ticket.getUser().getUsername(), params);
+
+                userTickets.forEach(t -> t.setReminded(true));
+
+                log.info("Đã gửi 1 mail tổng hợp cho {}, gồm {} vé: ghế {}",
+                        user.getEmail(), userTickets.size(), seatNumbers);
+
+                ticketListUpdate.addAll(userTickets);
+
+            });
+        }
+        ticketRepository.saveAll(ticketListUpdate);
     }
 
 

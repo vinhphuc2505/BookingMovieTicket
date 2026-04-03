@@ -44,7 +44,6 @@ public class EmailReminderServiceImpl implements EmailReminderService{
             headers.set("api-key", API_KEY);
 
             // 2. Xây dựng Body theo cấu trúc Brevo yêu cầu
-            // Dùng Map để build nhanh thay vì tạo DTO phức tạp
             Map<String, Object> body = new HashMap<>();
             body.put("sender", Map.of("email", "tranphuc250503@gmail.com", "name", "Booking ticket movie"));
             body.put("to", List.of(Map.of("email", customerEmail, "name", customerName)));
@@ -57,9 +56,9 @@ public class EmailReminderServiceImpl implements EmailReminderService{
             ResponseEntity<String> response = restTemplate.postForEntity(BREVO_API_URL, entity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Gửi mail thành công cho {}", customerEmail);
+                log.info("Send mail successfully {}", customerEmail);
             } else {
-                log.error("Brevo trả về lỗi: {} cho email {}", response.getStatusCode(), customerEmail);
+                log.error("Brevo response error: {} {}", response.getStatusCode(), customerEmail);
             }
 
 
