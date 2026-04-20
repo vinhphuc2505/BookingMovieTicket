@@ -40,6 +40,18 @@ public class ShowTimeController {
                 .build();
     }
 
+    @GetMapping("/movies")
+    public ApiResponse<PageResponse<ShowTimeResponse>> findShowTimeByDate(
+            @RequestParam(value = "date", required = false)LocalDate date,
+            @RequestParam(value = "movieId", required = false) UUID movieId,
+            @RequestParam(value = "page", defaultValue = "1")int page,
+            @RequestParam(value = "size", defaultValue = "10")int size){
+        return ApiResponse.<PageResponse<ShowTimeResponse>>builder()
+                .code(200)
+                .result(showTimeService.findShowTimeByDateAndMovie(date, movieId, page, size))
+                .build();
+    }
+
     @PutMapping("/{id}")
     public ApiResponse<ShowTimeResponse> update(@PathVariable("id")UUID id,
                                                 @RequestBody @Valid ShowTimeUpdateRequest request){

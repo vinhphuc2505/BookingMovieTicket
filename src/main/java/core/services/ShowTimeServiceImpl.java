@@ -65,6 +65,7 @@ public class ShowTimeServiceImpl implements ShowTimeService{
         showTime.setRoom(room);
         showTime.setMovie(movie);
         showTime.setEndTime(endTime);
+        showTime.setAvailableSeat(room.getTotalSeats());
 
         return showTimeMapper.toShowTimeResponse(showTimeRepository.save(showTime));
     }
@@ -78,6 +79,29 @@ public class ShowTimeServiceImpl implements ShowTimeService{
         ZonedDateTime end = start.plusDays(1).minusNanos(1);
 
         Page<ShowTime> showTimePage = showTimeRepository.findByStartTimeBetween(start, end, pageable);
+
+        List<ShowTimeResponse> showTimeResponses = showTimePage.getContent().stream()
+                .map(showTimeMapper::toShowTimeResponse)
+                .toList();
+
+        return PageResponse.<ShowTimeResponse>builder()
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(showTimePage.getTotalPages())
+                .totalElements(showTimePage.getTotalElements())
+                .data(showTimeResponses)
+                .build();
+    }
+
+    @Override
+    public PageResponse<ShowTimeResponse> findShowTimeByDateAndMovie(LocalDate date, UUID movieId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("startTime").descending());
+
+        ZonedDateTime start = date.atStartOfDay(ZoneId.systemDefault());
+
+        ZonedDateTime end = start.plusDays(1).minusNanos(1);
+
+        Page<ShowTime> showTimePage = showTimeRepository.findByStartTimeBetweenAndMovie_MovieId(start, end, movieId, pageable);
 
         List<ShowTimeResponse> showTimeResponses = showTimePage.getContent().stream()
                 .map(showTimeMapper::toShowTimeResponse)

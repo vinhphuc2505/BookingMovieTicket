@@ -24,4 +24,7 @@ public class UserCreateRequest {
 
     @NotBlank(message = "FIELD_IS_NOT_EMPTY")
     private String password;
+
+    @NotBlank(message = "FIELD_IS_NOT_EMPTY")
+    private String passwordAgain;
 }

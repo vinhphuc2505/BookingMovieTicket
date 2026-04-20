@@ -13,7 +13,7 @@ public interface UserService {
 
     PageResponse<UserResponse> getUsers(int page, int size);
 
-    UserResponse update(UUID id, UserUpdateRequest request);
+    UserResponse update(UserUpdateRequest request);
 
     void delete(UUID id);
 }

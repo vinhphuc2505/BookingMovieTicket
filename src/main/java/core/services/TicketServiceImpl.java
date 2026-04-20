@@ -6,19 +6,14 @@ import core.dto.request.ticket.TicketItemRequest;
 import core.dto.request.ticket.TicketUpdateRequest;
 import core.dto.response.PageResponse;
 import core.dto.response.TicketResponse;
-import core.entities.Seat;
-import core.entities.ShowTimeSeat;
-import core.entities.Ticket;
-import core.entities.User;
+import core.entities.*;
 import core.enums.SeatStatus;
 import core.enums.StatusReason;
 import core.exceptions.AppException;
 import core.exceptions.ErrorCode;
 import core.factory.TicketPriceFactory;
 import core.mapper.TicketMapper;
-import core.repositories.ShowTimeSeatRepository;
-import core.repositories.TicketRepository;
-import core.repositories.UserRepository;
+import core.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -54,6 +48,8 @@ public class TicketServiceImpl implements TicketService{
     private final ShowTimeSeatRepository showTimeSeatRepository;
 
     private final EmailReminderService emailReminderService;
+
+    private final ShowTimeRepository showTimeRepository;
 
 
     @Override
@@ -105,9 +101,22 @@ public class TicketServiceImpl implements TicketService{
                 throw new AppException(ErrorCode.UNABLE_TO_PAY);
             }
         }
+        UUID showTimeId = showTimeSeats.get(0).getShowTime().getShowTimeId();
+
+        ShowTime showTime = showTimeRepository.findByIdWithLock(showTimeId)
+                .orElseThrow(() -> new AppException(ErrorCode.SHOW_TIME_NOT_EXISTED));
+
+        int availableSeat = showTime.getAvailableSeat() - tickets.size();
+
+        if(availableSeat < 0){
+            throw new AppException(ErrorCode.TICKET_SOLD_OUT);
+        }
+
+        showTime.setAvailableSeat(availableSeat);
 
         ticketRepository.saveAll(tickets);
         showTimeSeatRepository.saveAll(showTimeSeats);
+        showTimeRepository.save(showTime);
 
         return ticketMapper.toTicketResponse(tickets);
     }
@@ -169,13 +178,13 @@ public class TicketServiceImpl implements TicketService{
 
         List<Ticket> ticketListUpdate = new ArrayList<>();
 
-        log.info("Danh sách vé:");
-        for (Ticket t : tickets){
-            log.info("Đã tìm thấy vé cần nhắc hẹn: ID = {}, Phim = {}, Email = {}",
-                    t.getTicketId(),
-                    t.getShowTimeSeat().getShowTime().getMovie().getTitle(),
-                    t.getUser().getEmail());
-        }
+//        log.info("Danh sách vé:");
+//        for (Ticket t : tickets){
+//            log.info("Đã tìm thấy vé cần nhắc hẹn: ID = {}, Phim = {}, Email = {}",
+//                    t.getTicketId(),
+//                    t.getShowTimeSeat().getShowTime().getMovie().getTitle(),
+//                    t.getUser().getEmail());
+//        }
 
         if(!tickets.isEmpty()){
             Map<UUID, List<Ticket>> userTicketsMap = tickets.stream()

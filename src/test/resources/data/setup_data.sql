@@ -31,12 +31,13 @@ VALUES
 
 
 -- 6. Tạo Suất chiếu (ShowTime)
-INSERT INTO show_time (show_time_id, movie_id, room_id, start_time, end_time, base_price)
+INSERT INTO show_time (show_time_id, movie_id, room_id, start_time, end_time, available_seat, base_price)
 VALUES ('44444444-4444-4444-4444-444444444444',
         '11111111-1111-1111-1111-111111111111',
         '22222222-2222-2222-2222-222222222222',
         NOW() + INTERVAL '1 hour',
         NOW() + INTERVAL '4 hour',
+        10,
         100.00);
 
 -- 7. Tạo Trạng thái ghế cho suất chiếu (ShowTimeSeat) - ĐÂY LÀ ĐỐI TƯỢNG CHÍNH ĐỂ TEST LOCK

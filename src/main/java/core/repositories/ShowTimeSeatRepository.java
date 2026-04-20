@@ -4,8 +4,6 @@ package core.repositories;
 import core.entities.Seat;
 import core.entities.ShowTime;
 import core.entities.ShowTimeSeat;
-import core.enums.SeatStatus;
-import core.enums.StatusReason;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

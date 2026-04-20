@@ -8,7 +8,9 @@ import core.dto.response.MovieResponse;
 import core.dto.response.PageResponse;
 import core.services.MovieService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -17,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/movies")
 @RequiredArgsConstructor
+@Validated
 public class MovieController {
 
     private final MovieService movieService;
@@ -30,8 +33,9 @@ public class MovieController {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<MovieResponse>> getMovies(@RequestParam(name = "page", defaultValue = "1") int page,
-                                                              @RequestParam(name = "size", defaultValue = "10") int size){
+    public ApiResponse<PageResponse<MovieResponse>> getMovies(
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size){
         return ApiResponse.<PageResponse<MovieResponse>>builder()
                 .code(200)
                 .result(movieService.getMovies(page, size))
@@ -39,9 +43,11 @@ public class MovieController {
     }
 
     @GetMapping("/search")
-    public ApiResponse<PageResponse<MovieResponse>> searchMovies(@RequestParam(value = "title", required = false) String title,
-                                                         @RequestParam(name = "page", defaultValue = "1") int page,
-                                                         @RequestParam(name = "size", defaultValue = "10") int size){
+    public ApiResponse<PageResponse<MovieResponse>> searchMovies(
+            @RequestParam(value = "title", required = false) String title,
+//            @Pattern(regexp = "^(?=.*[\\p{L}0-9]).*$", message = "INVALID_TITLE_FORMAT") ,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size){
         return ApiResponse.<PageResponse<MovieResponse>>builder()
                 .code(200)
                 .result(movieService.searchMovies(page, size, title))

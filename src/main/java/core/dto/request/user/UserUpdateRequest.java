@@ -14,5 +14,11 @@ import lombok.NoArgsConstructor;
 public class UserUpdateRequest {
 
     @NotBlank(message = "FIELD_IS_NOT_EMPTY")
+    private String oldPassword;
+
+    @NotBlank(message = "FIELD_IS_NOT_EMPTY")
     private String password;
+
+    @NotBlank(message = "FIELD_IS_NOT_EMPTY")
+    private String passwordAgain;
 }

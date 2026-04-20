@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,11 +36,11 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/{id}")
-    public ApiResponse<UserResponse> update(@PathVariable("id")UUID id, @RequestBody @Valid UserUpdateRequest request){
+    @PutMapping
+    public ApiResponse<UserResponse> update(@RequestBody @Valid UserUpdateRequest request){
         return ApiResponse.<UserResponse>builder()
                 .code(200)
-                .result(userService.update(id, request))
+                .result(userService.update(request))
                 .build();
     }
 

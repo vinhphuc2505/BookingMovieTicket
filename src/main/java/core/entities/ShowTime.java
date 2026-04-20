@@ -38,6 +38,9 @@ public class ShowTime {
     @Column(name = "end_time")
     private ZonedDateTime endTime;
 
+    @Column(name = "available_seat")
+    private int availableSeat;
+
     @Column(name = "base_price")
     private BigDecimal basePrice;
 }

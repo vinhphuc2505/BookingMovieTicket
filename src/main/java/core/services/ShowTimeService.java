@@ -14,6 +14,8 @@ public interface ShowTimeService {
 
     PageResponse<ShowTimeResponse> findShowTimeByDate(LocalDate date, int page, int size);
 
+    PageResponse<ShowTimeResponse> findShowTimeByDateAndMovie(LocalDate date, UUID movieId, int page, int size);
+
     ShowTimeResponse update(UUID id, ShowTimeUpdateRequest request);
 
     void delete(UUID id);

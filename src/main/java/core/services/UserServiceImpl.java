@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,10 @@ public class UserServiceImpl implements UserService{
     public UserResponse create(UserCreateRequest request) {
         if(userRepository.existsByUsernameOrEmail(request.getUsername(), request.getEmail())){
             throw new AppException(ErrorCode.USER_OR_EMAIL_EXISTED);
+        }
+
+        if(!request.getPassword().equals(request.getPasswordAgain())){
+            throw new AppException(ErrorCode.PASSWORD_NOT_MATCH);
         }
 
         User user = userMapper.toUser(request);
@@ -73,11 +78,23 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public UserResponse update(UUID id, UserUpdateRequest request) {
-        User user = userRepository.findById(id)
+    public UserResponse update(UserUpdateRequest request) {
+        var userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        userMapper.updateUser(user, request);
+        boolean checkOldPassword = passwordEncoder.matches(request.getOldPassword(), user.getPassword());
+
+        if(!checkOldPassword){
+            throw new AppException(ErrorCode.PASSWORD_NOT_MATCH);
+        }
+
+        if(!request.getPassword().equals(request.getPasswordAgain())){
+            throw new AppException(ErrorCode.PASSWORD_NOT_MATCH);
+        }
+
+//        userMapper.updateUser(user, request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         return userMapper.toUserResponse(userRepository.save(user));

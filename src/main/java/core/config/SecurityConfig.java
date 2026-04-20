@@ -44,9 +44,9 @@ public class SecurityConfig {
     protected String SIGNER_KEY;
 
     private final String[] PUBLIC_ENDPOINTS = {"/auth/**", "/users/register", "/v3/api-docs/**"
-            , "/swagger-ui/**", "/swagger-ui.html", "/api/auth/**"};
+            , "/swagger-ui/**", "/swagger-ui.html", "/api/auth/**", "/error"};
 
-    private final String[] PUBLIC_ENDPOINTS_GET = {"/movies/**"};
+    private final String[] PUBLIC_ENDPOINTS_GET = {"/movies/**", "showtimes/**"};
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

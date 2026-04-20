@@ -22,6 +22,9 @@ public enum ErrorCode {
     SEAT_ALREADY_HELD_OR_BOOKED(409, "Seat already held or booked", HttpStatus.CONFLICT),
     TICKET_NOT_EXISTED(404, "Ticket not existed", HttpStatus.NOT_FOUND),
     UNABLE_TO_PAY(400, "I can not pay for seat", HttpStatus.BAD_REQUEST),
+    INVALID_TITLE_FORMAT(400, "Title invalid", HttpStatus.BAD_REQUEST),
+    PASSWORD_NOT_MATCH(400, "Password do not match", HttpStatus.BAD_REQUEST),
+    TICKET_SOLD_OUT(400, "Tickets are sold out", HttpStatus.NOT_FOUND),
 
     ;
 

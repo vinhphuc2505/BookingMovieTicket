@@ -36,7 +36,7 @@ public class RedisExpirationListener extends KeyExpirationEventMessageListener {
     private void handleSeatExpiration(UUID seatId) {
         log.info("Redis Worker: Seat {} expired. Checking database...", seatId);
 
-        // Logic dọn dẹp: chuyển trạng thái về AVAILABLE
+        // chuyển trạng thái về AVAILABLE
         showTimeSeatRepository.findById(seatId).ifPresent(seat -> {
             if (seat.getStatus() == SeatStatus.HOLDING) {
                 seat.setStatus(SeatStatus.AVAILABLE);

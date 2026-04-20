@@ -28,4 +28,6 @@ public class ShowTimeResponse {
     private ZonedDateTime endTime;
 
     private BigDecimal basePrice;
+
+//    private int availableSeat;
 }
