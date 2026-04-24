@@ -3,6 +3,7 @@ package core.auth;
 
 import com.nimbusds.jose.JOSEException;
 import core.dto.JwtInfo;
+import core.dto.TokenPayload;
 import core.dto.request.user.AuthenticationRequest;
 import core.dto.response.AuthenticationResponse;
 import core.entities.RedisToken;
@@ -38,10 +39,20 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
         User user = (User) authentication.getPrincipal();
 
+        TokenPayload refreshToken = jwtService.generateRefreshToken(user);
+        TokenPayload accessToken = jwtService.generateAccessToken(user, refreshToken.getJwtId());
+
+        RedisToken redisRefreshToken = RedisToken.builder()
+                .jwtId(refreshToken.getJwtId())
+                .expiredTime(refreshToken.getExpiredTime().getTime())
+                .build();
+
+        redisTokenRepository.save(redisRefreshToken);
+
         return AuthenticationResponse.builder()
                 .authenticate(true)
-                .accessToken(jwtService.generateAccessToken(user))
-                .refreshToken(jwtService.generateRefreshToken(user))
+                .accessToken(accessToken.getToken())
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
 
@@ -50,6 +61,7 @@ public class AuthenticateServiceImpl implements AuthenticateService{
         JwtInfo jwtInfo = jwtService.parseToken(token);
 
         String jwtId = jwtInfo.getJwtId();
+        String jwtIdRefreshToken = jwtInfo.getJwtIdRefreshToken();
         Date expiredTime = jwtInfo.getExpiredTime();
 
         if (expiredTime.before(new Date())){
@@ -62,6 +74,8 @@ public class AuthenticateServiceImpl implements AuthenticateService{
                 .build();
 
         redisTokenRepository.save(redisToken);
+
+        redisTokenRepository.deleteById(jwtIdRefreshToken);
     }
 }
 

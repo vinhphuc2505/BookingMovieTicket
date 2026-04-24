@@ -18,4 +18,6 @@ public class JwtInfo implements Serializable {
     private Date issueTime;
 
     private Date expiredTime;
+
+    private String jwtIdRefreshToken;
 }
