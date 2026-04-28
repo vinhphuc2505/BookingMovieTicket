@@ -9,10 +9,12 @@ import core.dto.request.user.AuthenticationRequest;
 import core.dto.request.user.RefreshTokenRequest;
 import core.dto.response.AuthenticationResponse;
 import core.entities.RedisToken;
+import core.entities.RefreshToken;
 import core.entities.User;
 import core.exceptions.AppException;
 import core.exceptions.ErrorCode;
 import core.repositories.RedisTokenRepository;
+import core.repositories.RefreshTokenRepository;
 import core.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +37,8 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
     private final RedisTokenRepository redisTokenRepository;
 
+    private final RefreshTokenRepository refreshTokenRepository;
+
     private final UserRepository userRepository;
 
     private final String TYPE_NAME = "REFRESH";
@@ -52,12 +56,14 @@ public class AuthenticateServiceImpl implements AuthenticateService{
         TokenPayload refreshToken = jwtService.generateRefreshToken(user);
         TokenPayload accessToken = jwtService.generateAccessToken(user, refreshToken.getJwtId());
 
-        RedisToken redisRefreshToken = RedisToken.builder()
+        long ttlRefreshToken = refreshToken.getExpiredTime().getTime() - System.currentTimeMillis();
+
+        RefreshToken redisRefreshToken = RefreshToken.builder()
                 .jwtId(refreshToken.getJwtId())
-                .expiredTime(refreshToken.getExpiredTime().getTime())
+                .expiredTime(Math.max(0, ttlRefreshToken)) // Lấy thời gian tính bằng ms
                 .build();
 
-        redisTokenRepository.save(redisRefreshToken);
+        refreshTokenRepository.save(redisRefreshToken);
 
         return AuthenticationResponse.builder()
                 .authenticate(true)
@@ -80,12 +86,12 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
         RedisToken redisToken = RedisToken.builder()
                 .jwtId(jwtId)
-                .expiredTime(expiredTime.getTime() - new Date().getTime())
+                .expiredTime(expiredTime.getTime() - System.currentTimeMillis())
                 .build();
 
         redisTokenRepository.save(redisToken);
 
-        redisTokenRepository.deleteById(jwtIdRefreshToken);
+        refreshTokenRepository.deleteById(jwtIdRefreshToken);
     }
 
     @Override
@@ -103,21 +109,27 @@ public class AuthenticateServiceImpl implements AuthenticateService{
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if(!redisTokenRepository.existsById(jwtIdRefreshToken)){
+//        if(!redisTokenRepository.existsById(jwtIdRefreshToken)){
+//            throw new RuntimeException("Refresh token has been revoked or expired");
+//        }
+
+        if(!refreshTokenRepository.existsById(jwtIdRefreshToken)){
             throw new RuntimeException("Refresh token has been revoked or expired");
         }
 
-        redisTokenRepository.deleteById(jwtIdRefreshToken);
+        refreshTokenRepository.deleteById(jwtIdRefreshToken);
 
         TokenPayload refreshTokenNew = jwtService.generateRefreshToken(user);
         TokenPayload accessToken = jwtService.generateAccessToken(user, refreshTokenNew.getJwtId());
 
-        RedisToken redisRefreshToken = RedisToken.builder()
+        long ttlRefreshToken = refreshTokenNew.getExpiredTime().getTime() - System.currentTimeMillis();
+
+        RefreshToken redisRefreshToken = RefreshToken.builder()
                 .jwtId(refreshTokenNew.getJwtId())
-                .expiredTime(refreshTokenNew.getExpiredTime().getTime())
+                .expiredTime(Math.max(0, ttlRefreshToken))
                 .build();
 
-        redisTokenRepository.save(redisRefreshToken);
+        refreshTokenRepository.save(redisRefreshToken);
 
         return AuthenticationResponse.builder()
                 .authenticate(true)
