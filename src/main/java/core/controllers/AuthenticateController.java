@@ -3,6 +3,7 @@ package core.controllers;
 
 import com.nimbusds.jose.JOSEException;
 import core.dto.request.user.AuthenticationRequest;
+import core.dto.request.user.RefreshTokenRequest;
 import core.dto.response.ApiResponse;
 import core.dto.response.AuthenticationResponse;
 import core.auth.AuthenticateService;
@@ -35,6 +36,14 @@ public class AuthenticateController {
         return ApiResponse.<String>builder()
                 .code(200)
                 .message("Logout successfully")
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshTokenRequest request) throws ParseException, JOSEException {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .code(200)
+                .result(authenticateService.refreshToken(request))
                 .build();
     }
 

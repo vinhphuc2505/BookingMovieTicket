@@ -10,12 +10,14 @@ import org.springframework.data.redis.core.TimeToLive;
 
 import java.util.concurrent.TimeUnit;
 
+
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@RedisHash("black_list")
-public class RedisToken {
+@RedisHash("refresh_tokens")
+public class RefreshToken {
     @Id
     private String jwtId;
 

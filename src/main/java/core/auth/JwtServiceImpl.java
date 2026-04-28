@@ -7,6 +7,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import core.dto.JwtInfo;
+import core.dto.TokenPayload;
 import core.entities.User;
 import core.repositories.RedisTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,20 +32,22 @@ public class JwtServiceImpl implements JwtService {
     private final RedisTokenRepository redisTokenRepository;
 
     @Override
-    public String generateAccessToken(User user) throws JOSEException {
+    public TokenPayload generateAccessToken(User user, String jwtIdRefreshToken) throws JOSEException {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         Date issueTime = new Date();
-        Date expirationTime = Date.from(Instant.now().plus(1, ChronoUnit.HOURS));
+        Date expirationTime = Date.from(Instant.now().plus(15, ChronoUnit.MINUTES));
+        String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getUserId().toString())
                 .issuer("booking.com")
-                .jwtID(UUID.randomUUID().toString())
+                .jwtID(jwtId)
                 .issueTime(issueTime)
                 .expirationTime(expirationTime)
                 .claim("scope", user.getRole())
                 .claim("type", "Access")
+                .claim("ref_jwtId", jwtIdRefreshToken)
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());
@@ -53,20 +56,27 @@ public class JwtServiceImpl implements JwtService {
 
         jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
 
-        return jwsObject.serialize();
+        String token = jwsObject.serialize();
+
+        return TokenPayload.builder()
+                .token(token)
+                .jwtId(jwtId)
+                .expiredTime(expirationTime)
+                .build();
     }
 
     @Override
-    public String generateRefreshToken(User user) throws JOSEException {
+    public TokenPayload generateRefreshToken(User user) throws JOSEException {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         Date issueTime = new Date();
         Date expirationTime = Date.from(Instant.now().plus(7, ChronoUnit.DAYS));
+        String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getUserId().toString())
                 .issuer("booking.com")
-                .jwtID(UUID.randomUUID().toString())
+                .jwtID(jwtId)
                 .issueTime(issueTime)
                 .expirationTime(expirationTime)
                 .claim("scope", user.getRole())
@@ -79,7 +89,13 @@ public class JwtServiceImpl implements JwtService {
 
         jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
 
-        return jwsObject.serialize();
+        String token = jwsObject.serialize();
+
+        return TokenPayload.builder()
+                .token(token)
+                .jwtId(jwtId)
+                .expiredTime(expirationTime)
+                .build();
     }
 
     @Override
@@ -108,11 +124,13 @@ public class JwtServiceImpl implements JwtService {
         String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
         Date issueTime = signedJWT.getJWTClaimsSet().getIssueTime();
         Date expiredTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        String jwtIdRefreshToken = signedJWT.getJWTClaimsSet().getClaim("ref_jwtId").toString();
 
         return JwtInfo.builder()
                 .jwtId(jwtId)
                 .issueTime(issueTime)
                 .expiredTime(expiredTime)
+                .jwtIdRefreshToken(jwtIdRefreshToken)
                 .build();
     }
 }

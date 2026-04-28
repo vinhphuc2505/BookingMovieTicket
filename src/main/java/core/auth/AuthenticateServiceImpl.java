@@ -2,12 +2,20 @@ package core.auth;
 
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.SignedJWT;
 import core.dto.JwtInfo;
+import core.dto.TokenPayload;
 import core.dto.request.user.AuthenticationRequest;
+import core.dto.request.user.RefreshTokenRequest;
 import core.dto.response.AuthenticationResponse;
 import core.entities.RedisToken;
+import core.entities.RefreshToken;
 import core.entities.User;
+import core.exceptions.AppException;
+import core.exceptions.ErrorCode;
 import core.repositories.RedisTokenRepository;
+import core.repositories.RefreshTokenRepository;
+import core.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +24,7 @@ import org.springframework.security.core.Authentication;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.UUID;
 
 
 @Service
@@ -28,6 +37,12 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
     private final RedisTokenRepository redisTokenRepository;
 
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    private final UserRepository userRepository;
+
+    private final String TYPE_NAME = "REFRESH";
+
 
     @Override
     public AuthenticationResponse login(AuthenticationRequest request) throws JOSEException {
@@ -38,10 +53,22 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
         User user = (User) authentication.getPrincipal();
 
+        TokenPayload refreshToken = jwtService.generateRefreshToken(user);
+        TokenPayload accessToken = jwtService.generateAccessToken(user, refreshToken.getJwtId());
+
+        long ttlRefreshToken = refreshToken.getExpiredTime().getTime() - System.currentTimeMillis();
+
+        RefreshToken redisRefreshToken = RefreshToken.builder()
+                .jwtId(refreshToken.getJwtId())
+                .expiredTime(Math.max(0, ttlRefreshToken)) // Lấy thời gian tính bằng ms
+                .build();
+
+        refreshTokenRepository.save(redisRefreshToken);
+
         return AuthenticationResponse.builder()
                 .authenticate(true)
-                .accessToken(jwtService.generateAccessToken(user))
-                .refreshToken(jwtService.generateRefreshToken(user))
+                .accessToken(accessToken.getToken())
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
 
@@ -50,6 +77,7 @@ public class AuthenticateServiceImpl implements AuthenticateService{
         JwtInfo jwtInfo = jwtService.parseToken(token);
 
         String jwtId = jwtInfo.getJwtId();
+        String jwtIdRefreshToken = jwtInfo.getJwtIdRefreshToken();
         Date expiredTime = jwtInfo.getExpiredTime();
 
         if (expiredTime.before(new Date())){
@@ -58,10 +86,56 @@ public class AuthenticateServiceImpl implements AuthenticateService{
 
         RedisToken redisToken = RedisToken.builder()
                 .jwtId(jwtId)
-                .expiredTime(expiredTime.getTime() - new Date().getTime())
+                .expiredTime(expiredTime.getTime() - System.currentTimeMillis())
                 .build();
 
         redisTokenRepository.save(redisToken);
+
+        refreshTokenRepository.deleteById(jwtIdRefreshToken);
+    }
+
+    @Override
+    public AuthenticationResponse refreshToken(RefreshTokenRequest refreshToken) throws JOSEException, ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(refreshToken.getRefreshToken());
+
+        String tokenType = signedJWT.getJWTClaimsSet().getClaim("type").toString();
+        String userId = signedJWT.getJWTClaimsSet().getSubject();
+        String jwtIdRefreshToken = signedJWT.getJWTClaimsSet().getJWTID();
+
+        if(tokenType == null || !tokenType.equalsIgnoreCase(TYPE_NAME)){
+            throw new RuntimeException("Invalid token type");
+        }
+
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+//        if(!redisTokenRepository.existsById(jwtIdRefreshToken)){
+//            throw new RuntimeException("Refresh token has been revoked or expired");
+//        }
+
+        if(!refreshTokenRepository.existsById(jwtIdRefreshToken)){
+            throw new RuntimeException("Refresh token has been revoked or expired");
+        }
+
+        refreshTokenRepository.deleteById(jwtIdRefreshToken);
+
+        TokenPayload refreshTokenNew = jwtService.generateRefreshToken(user);
+        TokenPayload accessToken = jwtService.generateAccessToken(user, refreshTokenNew.getJwtId());
+
+        long ttlRefreshToken = refreshTokenNew.getExpiredTime().getTime() - System.currentTimeMillis();
+
+        RefreshToken redisRefreshToken = RefreshToken.builder()
+                .jwtId(refreshTokenNew.getJwtId())
+                .expiredTime(Math.max(0, ttlRefreshToken))
+                .build();
+
+        refreshTokenRepository.save(redisRefreshToken);
+
+        return AuthenticationResponse.builder()
+                .authenticate(true)
+                .accessToken(accessToken.getToken())
+                .refreshToken(refreshTokenNew.getToken())
+                .build();
     }
 }
 
